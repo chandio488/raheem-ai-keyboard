@@ -89,16 +89,15 @@ sed -i \
   -e 's|<string name="android_spell_checker_settings">Indic Keyboard Spell Checker Settings</string>|<string name="android_spell_checker_settings">RAHEEM AI ULTRA Spell Checker Settings</string>|' \
   "$J/res/values/strings-appname.xml"
 
-# 2) applicationId (fresh, unique) + version. The single update bumps the
-#    version above v1 (which shipped base versionCode 1 -> arm64 output 2,
-#    armeabi output 1, via the upstream ABI-split offsets): base 3 here
-#    yields arm64 output 4 and armeabi output 3, both strictly higher, so
-#    the identity change is carried by the new release signature alone and
-#    never by a versionCode collision.
+# 2) applicationId (fresh, unique) + version. History: v1 shipped base
+#    versionCode 1 -> arm64 output 2, armeabi output 1 (upstream ABI-split
+#    offsets); the v1.1 update used base 3 -> arm64 output 4, armeabi 3.
+#    v1.2 (Direct Voice Typing build, owner order 2026-11-14) uses base 5
+#    -> arm64 output 6, armeabi output 5, strictly higher than v1.1.
 sed -i \
   -e 's|applicationId = "org.smc.inputmethod.indic"|applicationId = "com.raheem.aiultra"|' \
-  -e 's|versionCode = 220|versionCode = 3|' \
-  -e 's|versionName = "4.0.1"|versionName = "1.1"|' \
+  -e 's|versionCode = 220|versionCode = 5|' \
+  -e 's|versionName = "4.0.1"|versionName = "1.2"|' \
   "$J/build.gradle"
 
 # 3) Urdu locales ur_IN -> ur_PK — BOTH files that key Urdu by region:
@@ -322,8 +321,8 @@ test -f "$J/src/org/smc/inputmethod/indic/voice/SherpaOnnxRecognizer.kt"
 grep -q 'NATIVE_LINKED = true' "$J/src/org/smc/inputmethod/indic/voice/UrduAsrEngine.java"
 grep -q 'return new SherpaOnnxRecognizer()' "$J/src/org/smc/inputmethod/indic/voice/UrduRecognizer.java"
 test "$(sha256sum "$J/libs/sherpa-onnx-2.0.1.aar" | cut -d' ' -f1)" = "a8d09d1d32f3eb8520482c6d3d43fae674681c5b050385967c70a3c2c9bf0ee7"
-grep -q 'versionCode = 3' "$J/build.gradle"
-grep -q 'versionName = "1.1"' "$J/build.gradle"
+grep -q 'versionCode = 5' "$J/build.gradle"
+grep -q 'versionName = "1.2"' "$J/build.gradle"
 # Name Correction Layer (Farhan reply 12): rules file + corrector + panel wiring.
 test -f "$J/res/raw/name_corrections.json"
 test -f "$J/src/org/smc/inputmethod/indic/voice/NameCorrector.java"
