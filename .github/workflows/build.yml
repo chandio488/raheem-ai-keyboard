@@ -40,7 +40,20 @@ jobs:
 
       - name: Install SDK platform 37 and build-tools 37.0.0
         run: |
-          SDKMAN="$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager"
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls "$ANDROID_HOME/cmdline-tools" || true
+          SDKMAN="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f 2>/dev/null | sort | tail -n 1)"
+          if [ -z "$SDKMAN" ] && command -v sdkmanager >/dev/null 2>&1; then SDKMAN="$(command -v sdkmanager)"; fi
+          if [ -z "$SDKMAN" ]; then
+            echo "sdkmanager not found on runner; downloading command line tools"
+            mkdir -p "$ANDROID_HOME/cmdline-tools"
+            curl -fsSL -o /tmp/cmdtools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+            unzip -q /tmp/cmdtools.zip -d "$ANDROID_HOME/cmdline-tools"
+            mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+            SDKMAN="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          fi
+          echo "Using sdkmanager: $SDKMAN"
+          ls -l "$SDKMAN"
           yes | "$SDKMAN" --licenses > /dev/null || true
           "$SDKMAN" "platforms;android-37.0" || "$SDKMAN" "platforms;android-37"
           "$SDKMAN" "build-tools;37.0.0"
