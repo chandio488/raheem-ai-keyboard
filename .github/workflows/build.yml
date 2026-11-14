@@ -24,7 +24,7 @@ jobs:
           git checkout e5bee019d57a1d106799dffd6f5d429caa447e07
           git submodule update --init --recursive
 
-      - name: Apply Raheem AI Keyboard v1 rebrand
+      - name: Apply Raheem AI ULTRA repack + single feature update
         run: bash apply-raheem-ultra.sh src
 
       - name: Set up JDK 17
@@ -59,22 +59,36 @@ jobs:
           "$SDKMAN" "build-tools;37.0.0"
           echo "sdk.dir=$ANDROID_HOME" > src/java/local.properties
 
-      - name: Generate Gradle wrapper and build debug APK
+      - name: Generate ephemeral CI keystore (final release signing is applied afterwards under controlled custody)
+        run: |
+          keytool -genkeypair -keystore "$RUNNER_TEMP/ci-ephemeral.jks" -storepass ci-ephemeral -keypass ci-ephemeral -alias ci -keyalg RSA -keysize 2048 -validity 2 -dname "CN=CI Ephemeral" -storetype PKCS12
+          {
+            echo "INDIC_KEYSTORE=$RUNNER_TEMP/ci-ephemeral.jks"
+            echo "INDIC_KEYSTORE_PASSWORD=ci-ephemeral"
+            echo "INDIC_KEY_ALIAS=ci"
+            echo "INDIC_KEY_PASSWORD=ci-ephemeral"
+          } >> "$GITHUB_ENV"
+
+      - name: Generate Gradle wrapper and build release APK (online flavor)
         working-directory: src/java
         run: |
           gradle wrapper --gradle-version 9.5.1
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleOnlineRelease --stacktrace
+
+      - name: Remove ephemeral keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/ci-ephemeral.jks"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: raheem-ai-keyboard-debug-apk
-          path: src/java/build/outputs/apk/**/debug/*.apk
+          name: raheem-ai-ultra-update-apk
+          path: src/java/build/outputs/apk/online/release/*.apk
           if-no-files-found: error
 
       - name: Attach APKs to a GitHub release (public verification download)
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0-build-${{ github.run_number }}
-          name: Raheem AI Keyboard v1.0 (build ${{ github.run_number }})
-          files: src/java/build/outputs/apk/**/debug/*.apk
+          tag_name: v1.1-build-${{ github.run_number }}
+          name: Raheem AI ULTRA v1.1 update (build ${{ github.run_number }})
+          files: src/java/build/outputs/apk/online/release/*.apk
