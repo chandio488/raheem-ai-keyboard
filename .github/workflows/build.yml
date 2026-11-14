@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
       - name: Checkout this repo (build recipe)
         uses: actions/checkout@v4
@@ -37,9 +40,11 @@ jobs:
 
       - name: Install SDK platform 37 and build-tools 37.0.0
         run: |
-          yes | sdkmanager --licenses > /dev/null || true
-          sdkmanager "platforms;android-37" "build-tools;37.0.0" || \
-          sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
+          SDKMAN="$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager"
+          yes | "$SDKMAN" --licenses > /dev/null || true
+          "$SDKMAN" "platforms;android-37.0" || "$SDKMAN" "platforms;android-37"
+          "$SDKMAN" "build-tools;37.0.0"
+          echo "sdk.dir=$ANDROID_HOME" > src/java/local.properties
 
       - name: Generate Gradle wrapper and build debug APK
         working-directory: src/java
