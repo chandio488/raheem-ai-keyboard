@@ -324,6 +324,20 @@ grep -q 'return new SherpaOnnxRecognizer()' "$J/src/org/smc/inputmethod/indic/vo
 test "$(sha256sum "$J/libs/sherpa-onnx-2.0.1.aar" | cut -d' ' -f1)" = "a8d09d1d32f3eb8520482c6d3d43fae674681c5b050385967c70a3c2c9bf0ee7"
 grep -q 'versionCode = 3' "$J/build.gradle"
 grep -q 'versionName = "1.1"' "$J/build.gradle"
+# Name Correction Layer (Farhan reply 12): rules file + corrector + panel wiring.
+test -f "$J/res/raw/name_corrections.json"
+test -f "$J/src/org/smc/inputmethod/indic/voice/NameCorrector.java"
+grep -q 'NameCorrector.correct' "$J/src/com/android/inputmethod/keyboard/voice/DictationView.java"
+python3 - "$J/res/raw/name_corrections.json" <<'PYEOF'
+import json, sys
+data = json.load(open(sys.argv[1], encoding="utf-8"))
+rules = data["rules"]
+assert len(rules) >= 4, rules
+pairs = {(r["wrong"], r["right"]) for r in rules}
+assert ("فرانک", "فرحان") in pairs and ("منھنا", "میوز") in pairs
+assert ("فرانس", "فرحان") in pairs and ("منع", "میوز") in pairs
+print("name_corrections.json OK (4 rules)")
+PYEOF
 test -f "$J/res/xml/prefs_screen_phrases.xml"
 test -f "$J/res/raw/quick_phrases.json"
 test -f "$J/res/raw/voice_model_manifest.json"
