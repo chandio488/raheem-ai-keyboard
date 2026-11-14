@@ -71,6 +71,23 @@ done
 sed -i 's|<color name="ic_launcher_background">#2A3854</color>|<color name="ic_launcher_background">#192C89</color>|' \
   "$J/res/values/ic_launcher_background.xml"
 
+# 6) DictionaryProvider authority -> package-unique value. Full source audit
+#    (SOURCE-AUDIT-2026-11-14.md, pinned tree, all 12 of Farhan's categories):
+#    the FIXED literal org.smc.inputmethod.dictionarypack.aosp occurs in
+#    exactly two places, and both function as the provider authority, so both
+#    must change together:
+#      a) res/values/dictionary-pack.xml — <string name="authority">, used by
+#         the manifest (@string/authority) and DictionarySettingsFragment.
+#      b) DictionaryPackConstants.AUTHORITY — code constant the provider
+#         builds its content URIs / UriMatcher from, the dictionary file
+#         dumper queries with, and the install receiver matches against.
+#    NOT touched: DICTIONARY_DOMAIN (com.android.inputmethod.dictionarypack.
+#    aosp) and the manifest's UNKNOWN_CLIENT action — those are broadcast
+#    intent actions, not authorities, and are a different literal anyway.
+sed -i 's|org\.smc\.inputmethod\.dictionarypack\.aosp|com.raheem.aiultra.dictionarypack.aosp|g' \
+  "$J/res/values/dictionary-pack.xml" \
+  "$J/src/com/android/inputmethod/dictionarypack/DictionaryPackConstants.java"
+
 # Sanity checks — fail the build loudly if the repack did not land
 grep -q 'RAHEEM AI ULTRA' "$J/res/values/strings-appname.xml"
 grep -q 'com.raheem.aiultra' "$J/build.gradle"
@@ -78,6 +95,15 @@ test "$(grep -c 'ur_PK' "$J/res/xml/method.xml")" = "3"
 grep -q '@mipmap/ic_launcher_foreground' "$J/res/mipmap-anydpi-v26/ic_launcher.xml"
 grep -q '@mipmap/ic_launcher_foreground' "$J/res/mipmap-anydpi-v26/ic_launcher_round.xml"
 grep -q '#192C89' "$J/res/values/ic_launcher_background.xml"
+# Authority fix: the old FIXED authority literal must be gone from the whole
+# java/ tree (res + src + AndroidManifest.xml — the audit proved every
+# functional occurrence lives under java/; the broadcast-action literal
+# com.android.inputmethod.dictionarypack.aosp is a different string and is
+# not matched), and the new package-unique value must be present in both
+# authority sites (resource definition + Java constant).
+! grep -rq 'org\.smc\.inputmethod\.dictionarypack\.aosp' "$J"
+grep -q 'com.raheem.aiultra.dictionarypack.aosp' "$J/res/values/dictionary-pack.xml"
+grep -q 'com.raheem.aiultra.dictionarypack.aosp' "$J/src/com/android/inputmethod/dictionarypack/DictionaryPackConstants.java"
 for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
   for f in ic_launcher.png ic_launcher_round.png ic_launcher_foreground.png; do
     test -s "$J/res/mipmap-$d/$f"
