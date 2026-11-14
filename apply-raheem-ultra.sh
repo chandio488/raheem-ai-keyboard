@@ -15,6 +15,13 @@ SRC="${1:?usage: apply-raheem-ultra.sh <indic-keyboard-tree>}"
 J="$SRC/java"
 ASSETS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/assets"
 
+# Assets may arrive as a single zip at the repo root (GitHub web uploads
+# flatten folder paths, so the icon set is shipped as assets-ultra.zip,
+# which contains the assets/ tree and is extracted back into place here).
+if [ ! -d "$ASSETS/icons" ] && [ -f "$(dirname "$ASSETS")/assets-ultra.zip" ]; then
+  python3 -m zipfile -e "$(dirname "$ASSETS")/assets-ultra.zip" "$(dirname "$ASSETS")/"
+fi
+
 # 1) App / IME labels -> RAHEEM AI ULTRA
 sed -i \
   -e 's|<string name="english_ime_name">Indic Keyboard</string>|<string name="english_ime_name">RAHEEM AI ULTRA</string>|' \
